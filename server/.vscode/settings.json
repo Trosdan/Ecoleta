@@ -1,0 +1,11 @@
+{
+  "sqltools.connections": [
+    {
+      "database": "${workspaceFolder:server}/src/database/database.sqlite",
+      "driver": "SQLite",
+      "name": "Ecoleta",
+      "previewLimit": 50
+    }
+  ],
+  "sqltools.useNodeRuntime": true
+}
