@@ -1,4 +1,4 @@
-import React, { useEffect, useCallback, useState } from 'react';
+import React, { useEffect, useCallback, useState, ChangeEvent } from 'react';
 import { Link } from 'react-router-dom';
 import { FiArrowLeft } from 'react-icons/fi';
 import { Map, TileLayer, Popup, Marker} from 'react-leaflet'
@@ -7,6 +7,7 @@ import api from '../../services/api';
 import './styles.css';
 
 import logo from '../../assets/logo.svg'
+import axios from 'axios';
 
 interface Item {
   id: number;
@@ -14,8 +15,20 @@ interface Item {
   image_url: string;
 }
 
+interface IBGEUFResponse {
+  sigla: string;
+}
+
+interface IBGECityResponse {
+  nome: string;
+}
+
 const CreatePoint = () => {
   const [items, setItems] = useState<Item[]>([]);
+  const [Ufs, setUfs] = useState<string[]>([]);
+  const [cities, setCities] = useState<string[]>([]);
+
+  const [selectedUf, setSelecteduf] = useState('0');
 
   useEffect(() => {
     getItems();
@@ -30,6 +43,45 @@ const CreatePoint = () => {
     }
   }, [])
 
+
+  useEffect(() => {
+    getUf();
+  }, [])
+
+  const getUf = useCallback(async () => {
+    try {
+      const { data } = await axios.get<IBGEUFResponse[]>('https://servicodados.ibge.gov.br/api/v1/localidades/estados')
+      const ufInitials = data.map(uf => uf.sigla);
+
+      setUfs(ufInitials);
+    } catch (error) {
+      alert('Não foi possivel carregar os Estados.');
+    }
+  }, []);
+
+  const handleSelectUf = useCallback((event: ChangeEvent<HTMLSelectElement>) => {
+    const uf = event.target.value;
+
+    setSelecteduf(uf);
+  }, [])
+
+  useEffect(() => {
+    if(selectedUf === '0'){
+      return;
+    }
+    getCities();
+  }, [selectedUf])
+
+  const getCities = useCallback(async () => {
+    try {
+      const { data } = await axios.get<IBGECityResponse[]>(`https://servicodados.ibge.gov.br/api/v1/localidades/estados/${selectedUf}/municipios`)
+      const cityNames = data.map(city => city.nome);
+      setCities(cityNames);
+    } catch (error) {
+      alert('Não foi possivel carregar os Municipios.');
+    }
+  }, [selectedUf])
+  
   return (
     <div id="page-create-point">
       <header>
@@ -94,14 +146,25 @@ const CreatePoint = () => {
           <div className="field-group">
             <div className="field">
               <label htmlFor="uf">Estado (UF)</label>
-              <select name="uf" id="uf">
+              <select 
+                name="uf" 
+                id="uf" 
+                value={selectedUf} 
+                onChange={handleSelectUf}
+              >
                 <option value="0">Selecione uma UF</option>
+                {Ufs.map(uf => (
+                  <option key={uf} value={uf}>{uf}</option>
+                ))}
               </select>
             </div>
             <div className="field">
               <label htmlFor="city">Cidade</label>
               <select name="city" id="city">
                 <option value="0">Selecione uma cidade</option>
+                {cities.map(city => (
+                  <option key={city} value={city}>{city}</option>
+                ))}
               </select>
             </div>
           </div>
